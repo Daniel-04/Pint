@@ -1,0 +1,76 @@
+import sys
+
+from .claude_engine import ClaudeEngine
+from .open_ai_engine import OpenAIEngine
+from .external_engine import ExternalEngine
+
+
+DEFAULT_MAX_PROMPT_LENGTH = 100000
+DEFAULT_MAX_TOKENS = 4096
+
+
+class WorkflowContext:
+    def __init__(self, model_data):
+        # Config from model_data
+        self.start_from = int(model_data.get("start_from", 0))
+        self.precheck_system = model_data.get(
+            "precheck_system",
+            "You are helping to automate a workflow.  You will be asked a question to verify the information you have given. You must only answer the question in EXACTLY the format requested. The answer will only ever be read by a computer, NEVER add any other commentary or automated processing will fail. It is more important to give a correctly formatted answer than to be sure the answer is correct.",
+        )
+
+        self.max_docs = model_data.get("max_documents")
+        self.max_tokens = int(model_data.get("max_tokens", DEFAULT_MAX_TOKENS))
+        self.max_prompt_length = int(
+            model_data.get("max_prompt_length", DEFAULT_MAX_PROMPT_LENGTH)
+        )
+        self.max_doc_length = int(model_data.get("max_document_length", sys.maxsize))
+
+        # Responses are stored so that they are not repeated later
+        # If you want to clear the cache, delete the cache folder, or you can change the key in the specific api file
+        self.data_folder = model_data.resolve_path(
+            model_data.get("files_folder", "files")
+        )
+        self.cache_folder = model_data.get("cache_folder", "cache/api")
+        self.data_cache_folder = model_data.get(
+            "self_data.data_cache_folder", "cache/data"
+        )
+
+        self.which_api = model_data.get("model")
+        self.api_key = model_data.get("api_key")
+
+        self.column_name = model_data.get("column_name", "pubmed_id")
+        # There is an alternative to use a local script to get pubmed data
+        self.use_pubmed_api = (
+            model_data.get("use_pubmed_api", "true").strip().lower() == "true"
+        )
+        self.use_pubmed_search = (
+            model_data.get("use_pubmed_search", "false").strip().lower() == "true"
+        )
+
+        # Runtime state
+        self.data_store = {}
+        self.output_data = {}
+        self.final_output = {}
+        self.debug = {}
+        self.ordered_column_list = []
+        self.reply_count = 0
+        self.script_returncode = 0
+        self.llm_engine = None
+
+    def setup_llm_engine(self):
+        if self.which_api == "claude":
+            self.llm_engine = ClaudeEngine(
+                key=self.api_key,
+                cache_folder=self.cache_folder,
+                max_tokens=self.max_tokens,
+            )
+        elif self.which_api == "openai":
+            self.llm_engine = OpenAIEngine(
+                key=self.api_key,
+                cache_folder=self.cache_folder,
+                max_tokens=self.max_tokens,
+            )
+        elif self.which_api == "external":
+            self.llm_engine = ExternalEngine(
+                cache_folder=self.cache_folder, max_tokens=self.max_tokens
+            )
