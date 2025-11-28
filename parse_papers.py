@@ -19,8 +19,7 @@ from .prompt_data import PromptDataParser
 model_data = ModelDataLoader()
 parser = PromptDataParser()
 
-context = WorkflowContext(model_data.data)
-
+context = WorkflowContext(model_data)
 
 print("starting...")
 
@@ -57,8 +56,6 @@ prechecks = {
 
 
 def setup(ctx=context):
-    print(ctx)
-
     os.makedirs(ctx.data_cache_folder, exist_ok=True)
     os.makedirs(ctx.cache_folder, exist_ok=True)
     ctx.setup_llm_engine(model_data)
@@ -347,6 +344,9 @@ def get_pubmed_from_local(pubmed_id):
 def get_text_from_local(filename, ctx=context):
     filename = os.path.join(ctx.data_folder, filename)
 
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f"File not found: {filename}")
+
     if filename.lower().endswith(".pdf"):
         try:
             from pdfminer.high_level import extract_text
@@ -629,6 +629,9 @@ def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context
             process_pubmed_id(
                 pubmed_id, processed_documents, sections_to_extract, data_folder
             )
+        except FileNotFoundError as e:
+            print(f"Skipping {pubmed_id}: {e}.")
+            continue
         except Exception as e:
             print(e)
             print("error with", pubmed_id)
