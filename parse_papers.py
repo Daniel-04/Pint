@@ -18,8 +18,7 @@ from .prompt_data import PromptDataParser
 
 model_data = ModelDataLoader()
 parser = PromptDataParser()
-
-context = WorkflowContext(model_data)
+context = WorkflowContext()
 
 print("starting...")
 
@@ -56,6 +55,7 @@ prechecks = {
 
 
 def setup(ctx=context):
+    ctx.reinit(model_data)
     os.makedirs(ctx.data_cache_folder, exist_ok=True)
     os.makedirs(ctx.cache_folder, exist_ok=True)
     ctx.setup_llm_engine(model_data)

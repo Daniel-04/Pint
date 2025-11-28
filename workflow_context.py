@@ -10,7 +10,10 @@ DEFAULT_MAX_TOKENS = 4096
 
 
 class WorkflowContext:
-    def __init__(self, model_data):
+    def __init__(self, model_data=None):
+        if not model_data:
+            return
+
         # Config from model_data
         self.start_from = int(model_data.get("start_from", 0))
         self.precheck_system = model_data.get(
@@ -56,6 +59,9 @@ class WorkflowContext:
         self.reply_count = 0
         self.script_returncode = 0
         self.llm_engine = None
+
+    def reinit(self, model_data):
+        self.__init__(model_data)
 
     def setup_llm_engine(self, model_data):
         if self.which_api == "claude":
