@@ -11,7 +11,7 @@ class ExternalEngine:
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
         self.max_tokens = max_tokens  # note not used for external engine
         self.model_engine = model_data.get("model_name")
-        self.llm_script = model_data.get("llm_script")
+        self.llm_script = model_data.resolve_path(model_data.get("llm_script"))
         if self.llm_script is None:
             raise RuntimeError(
                 "To use an External LLM script, llm_script must be specified in the config file."
