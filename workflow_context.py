@@ -57,20 +57,22 @@ class WorkflowContext:
         self.script_returncode = 0
         self.llm_engine = None
 
-    def setup_llm_engine(self):
+    def setup_llm_engine(self, model_data):
         if self.which_api == "claude":
             self.llm_engine = ClaudeEngine(
+                model_data,
                 key=self.api_key,
                 cache_folder=self.cache_folder,
                 max_tokens=self.max_tokens,
             )
         elif self.which_api == "openai":
             self.llm_engine = OpenAIEngine(
+                model_data,
                 key=self.api_key,
                 cache_folder=self.cache_folder,
                 max_tokens=self.max_tokens,
             )
         elif self.which_api == "external":
             self.llm_engine = ExternalEngine(
-                cache_folder=self.cache_folder, max_tokens=self.max_tokens
+                model_data, cache_folder=self.cache_folder, max_tokens=self.max_tokens
             )

@@ -1,33 +1,33 @@
-import os
 import json
 import subprocess
-import hashlib
-from .prompt_cache_sqlite import PromptCache  # Import the SQLite-based cache
-from .model_data import get_model_data
 
- 
+from .prompt_cache_sqlite import PromptCache  # Import the SQLite-based cache
+
+
 class ExternalEngine:
-    def __init__(self, cache_folder="cache", max_tokens = 4096):
+    def __init__(self, model_data, cache_folder="cache", max_tokens=4096):
         """Initialize the engine with caching using SQLite."""
 
-        model_data = get_model_data()
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
-        self.max_tokens = max_tokens #note not used for external engine
-        self.model_engine = model_data["model_name"]
+        self.max_tokens = max_tokens  # note not used for external engine
+        self.model_engine = model_data.get("model_name")
         self.llm_script = model_data.get("llm_script")
         if self.llm_script is None:
-            raise RuntimeError("To use an External LLM script, llm_script must be specified in the config file.")
-
+            raise RuntimeError(
+                "To use an External LLM script, llm_script must be specified in the config file."
+            )
 
     def prompt(self, prompt, system=""):
         """Generates a response using the external script, with caching."""
-        messages = [{"role": "system", "content": system}, {"role": "user", "content": prompt}]
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
         response = self.create_chat_completion(messages)
         return response["choices"][0]["message"]["content"]
 
     def create_chat_completion(self, messages):
         """Handles chat completion with caching support."""
-
         # Extract system and user messages
         prompt = ""
         system = ""
@@ -39,13 +39,14 @@ class ExternalEngine:
 
         # Check cache first
 
-        cached_response = self.cache.get_cached_response(self.model_engine, system, prompt)
+        cached_response = self.cache.get_cached_response(
+            self.model_engine, system, prompt
+        )
         if cached_response:
             return {"choices": [cached_response]}
 
         # Prepare the prompt for the external script
         local_prompt = json.dumps({"prompt": prompt, "system": system})
- 
 
         # Run the external script
         result = subprocess.run(
@@ -53,7 +54,7 @@ class ExternalEngine:
             input=local_prompt,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         # Process the output

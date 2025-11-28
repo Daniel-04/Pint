@@ -9,17 +9,17 @@ import shlex
 
 from . import utils as u
 
-from .prompt_data import get_prompt_data
-from .prompt_data import load_prompt_data
 from .parse_pubmed_json import parse_pubmed_data
 
 from .workflow_context import WorkflowContext
 from .model_data import ModelDataLoader
+from .prompt_data import PromptDataParser
 
 
 model_data = ModelDataLoader()
+parser = PromptDataParser()
+
 context = WorkflowContext(model_data.data)
-context.setup_llm_engine()
 
 
 print("starting...")
@@ -61,7 +61,7 @@ def setup(ctx=context):
 
     os.makedirs(ctx.data_cache_folder, exist_ok=True)
     os.makedirs(ctx.cache_folder, exist_ok=True)
-    ctx.setup_llm_engine()
+    ctx.setup_llm_engine(model_data)
 
 
 def preprocess_prompt_old(prompt, escape=False, ctx=context):
@@ -307,7 +307,7 @@ def process_document(pmid, document_data, ctx=context):
                 ctx.data_store[variable] = model_data.get(m)
 
         print(f"Processing {pmid}")
-        prompt_data = get_prompt_data()
+        prompt_data = parser.get_prompt_data()
 
         for process in prompt_data:
 
@@ -690,7 +690,7 @@ def parse_papers(config_file, ctx=context):
 
     setup()
 
-    load_prompt_data(model_data)
+    parser.load_prompt_data(model_data)
     if ctx.use_pubmed_search:
         search_script = model_data.get("pubmed_search_script")
         search_term = model_data.get("pubmed_search_term")
@@ -699,7 +699,6 @@ def parse_papers(config_file, ctx=context):
         pubmed_ids, ctx.column_name = search_for_pubmed_ids(
             search_script, search_term, search_options
         )
-
     else:
         file_path = model_data.get("documents_data")
         ctx.column_name = model_data.get("column_name")
