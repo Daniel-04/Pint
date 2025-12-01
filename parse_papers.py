@@ -320,9 +320,7 @@ def process_document(pmid, document_data, ctx=context):
         return result
 
     except Exception as e:
-        print("Error processing document")
-        print("error", e)
-
+        print(f"Error processing document {pmid}: {e}")
         traceback.print_exc(file=sys.stdout)
         return None
 

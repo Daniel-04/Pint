@@ -1,4 +1,5 @@
 import csv
+import os
 
 try:
     import openpyxl
@@ -71,6 +72,9 @@ class PromptDataParser:
         return self.process_rows(rows, headers)
 
     def read_prompt(self, file_path):
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Prompt file not found: {file_path}")
+
         if file_path.lower().endswith(".xlsx"):
             return self.read_prompt_xlsx(file_path)
         if file_path.lower().endswith(".csv"):
