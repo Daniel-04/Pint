@@ -30,12 +30,18 @@ class ModelDataLoader:
             self.data[key] = values[0] if len(values) == 1 else values
 
     def load_model_data(self, filename):
-        self.data["config_root"] = os.path.dirname(filename)
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"Configuration file not found: {filename}")
+
+        self.data["config_root"] = os.path.dirname(os.path.abspath(filename))
 
         if filename.lower().endswith(".csv"):
-            with open(filename, "r", newline="", encoding="utf-8") as f:
-                reader = csv.reader(f)
-                self.process_rows(reader)
+            try:
+                with open(filename, "r", newline="", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    self.process_rows(reader)
+            except Exception as e:
+                raise RuntimeError(f"Error reading CSV config file {filename}: {e}") from e
         elif filename.lower().endswith(".xlsx"):
             try:
                 import openpyxl
@@ -43,9 +49,14 @@ class ModelDataLoader:
                 raise RuntimeError(
                     "To use an Excel file openpyxl must be installed.  csv files need no other libraries."
                 ) from e
-            wb = openpyxl.load_workbook(filename, data_only=True)
-            sheet = wb.active
-            self.process_rows(sheet.iter_rows(values_only=True))
+            try:
+                wb = openpyxl.load_workbook(filename, data_only=True)
+                sheet = wb.active
+                self.process_rows(sheet.iter_rows(values_only=True))
+            except Exception as e:
+                raise RuntimeError(f"Error reading Excel config file {filename}: {e}") from e
+        else:
+            raise ValueError(f"Unsupported configuration file format: {filename}")
 
     def resolve_path(self, path):
         """Convert relative paths to absolute, based on working directory."""
