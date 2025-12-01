@@ -1,6 +1,7 @@
 import os
 
 from .prompt_cache_sqlite import PromptCache
+from .retry import retry
 
 
 class OpenAIEngine:
@@ -31,16 +32,14 @@ class OpenAIEngine:
         return response["choices"][0]["message"]["content"]
 
     # create_chat_completion is used internally for API compatibility
+    @retry
     def create_chat_completion(self, messages):
-        # FIXME: Is this correct? or should it be [0], catenation of [1:]?
-        system = messages[0]["content"]
-        prompt = messages[1]["content"]
+        system = "".join(m["content"] for m in messages if m["role"] == "system")
+        prompt = "".join(m["content"] for m in messages if m["role"] == "user")
 
-        cached_response = self.cache.get_cached_response(
-            self.model_engine, system, prompt
-        )
-        if cached_response:
-            return {"choices": [cached_response]}
+        cached = self.cache.get_cached_response(self.model_engine, system, prompt)
+        if cached:
+            return {"choices": [cached]}
 
         response = self.client.chat.completions.create(
             model=self.model_engine,
@@ -50,9 +49,14 @@ class OpenAIEngine:
             n=1,
         )
 
-        content = response.choices[0].message.content
+        msg = response.choices[0].message
+        wrapped = {
+            "message": {
+                "role": "assistant",
+                "content": msg.content,
+            }
+        }
 
-        cached_message = {"message": {"content": content}}
-        self.cache.save_response(self.model_engine, system, prompt, cached_message)
-
-        return {"choices": [cached_message]}
+        # Save response to cache
+        self.cache.save_response(self.model_engine, system, prompt, wrapped)
+        return {"choices": [wrapped]}

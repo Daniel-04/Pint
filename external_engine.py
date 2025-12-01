@@ -2,6 +2,7 @@ import json
 import subprocess
 
 from .prompt_cache_sqlite import PromptCache  # Import the SQLite-based cache
+from .retry import retry
 
 
 class ExternalEngine:
@@ -26,19 +27,14 @@ class ExternalEngine:
         response = self.create_chat_completion(messages)
         return response["choices"][0]["message"]["content"]
 
+    @retry
     def create_chat_completion(self, messages):
         """Handles chat completion with caching support."""
         # Extract system and user messages
-        prompt = ""
-        system = ""
-        for m in messages:
-            if m["role"] == "user":
-                prompt += m["content"]
-            if m["role"] == "system":
-                system += m["content"]
+        system = " ".join(m["content"] for m in messages if m["role"] == "system")
+        prompt = " ".join(m["content"] for m in messages if m["role"] == "user")
 
         # Check cache first
-
         cached_response = self.cache.get_cached_response(
             self.model_engine, system, prompt
         )
@@ -46,22 +42,37 @@ class ExternalEngine:
             return {"choices": [cached_response]}
 
         # Prepare the prompt for the external script
-        local_prompt = json.dumps({"prompt": prompt, "system": system})
+        payload = {
+            "messages": messages,
+            "system": system,
+            "prompt": prompt,
+        }
+
+        local_prompt = json.dumps(payload)
 
         # Run the external script
-        result = subprocess.run(
-            [self.llm_script],
-            input=local_prompt,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        try:
+            result = subprocess.run(
+                [self.llm_script],
+                input=local_prompt,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"External LLM script failed: {e.stderr or e.stdout}"
+            ) from e
 
         # Process the output
         content = result.stdout.strip()
-        message = {"message": {"content": content}}
+        wrapped = {
+            "message": {
+                "role": "assistant",
+                "content": content,
+            }
+        }
 
         # Save the response to cache
-        self.cache.save_response(self.model_engine, system, prompt, message)
-
-        return {"choices": [message]}
+        self.cache.save_response(self.model_engine, system, prompt, wrapped)
+        return {"choices": [wrapped]}

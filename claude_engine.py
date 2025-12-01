@@ -1,6 +1,7 @@
 import os
 
 from .prompt_cache_sqlite import PromptCache
+from .retry import retry
 
 
 class ClaudeEngine:
@@ -14,14 +15,12 @@ class ClaudeEngine:
             ) from e
 
         if key is None:
-            key = os.environ["ANTHROPIC_API_KEY"]
+            key = os.environ.get("ANTHROPIC_API_KEY")
         if key is None:
             raise RuntimeError("ANTHROPIC_API_KEY environment variable is not set.")
-        self.max_tokens = max_tokens
         self.model_engine = model_data.get("model_name")
-        self.client = anthropic.Anthropic(
-            api_key=key,
-        )
+        self.max_tokens = max_tokens
+        self.client = anthropic.Anthropic(api_key=key)
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
@@ -34,31 +33,38 @@ class ClaudeEngine:
         return response["choices"][0]["message"]["content"]
 
     # This is used for API compatibility
+    @retry
     def create_chat_completion(self, messages):
-        prompt = ""
-        system = ""
-        for m in messages:
-            if m["role"] == "user":
-                prompt += m["content"]
-            if m["role"] == "system":
-                system += m["content"]
+        system_msg = "".join(m["content"] for m in messages if m["role"] == "system")
 
-        cached_response = self.cache.get_cached_response(
-            self.model_engine, system, prompt
-        )
-        if cached_response:
-            return {"choices": [cached_response]}
+        chat_messages = [
+            {"role": m["role"], "content": m["content"]}
+            for m in messages
+            if m["role"] != "system"
+        ]
 
-        message = self.client.messages.create(
+        system = system_msg
+        prompt = "".join(m["content"] for m in chat_messages if m["role"] == "user")
+
+        cached = self.cache.get_cached_response(self.model_engine, system, prompt)
+        if cached:
+            return {"choices": [cached]}
+
+        response = self.client.messages.create(
             model=self.model_engine,
-            system=system,
+            system=system_msg,
+            messages=chat_messages,
             max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}],
         )
 
-        response = {"message": {"content": message.content[0].text}}
+        text = response.content[0].text
+        wrapped = {
+            "message": {
+                "role": "assistant",
+                "content": text,
+            }
+        }
 
         # Save response to cache
-        self.cache.save_response(self.model_engine, system, prompt, response)
-
-        return {"choices": [response]}
+        self.cache.save_response(self.model_engine, system, prompt, wrapped)
+        return {"choices": [wrapped]}
