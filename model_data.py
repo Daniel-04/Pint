@@ -24,6 +24,9 @@ class ModelDataLoader:
                 if item_str:  # Only add non-empty strings
                     values.append(item_str)
 
+            if key.lower().endswith(("folder", "root", "path")):
+                values = [self.resolve_path(v) for v in values]
+
             self.data[key] = values[0] if len(values) == 1 else values
 
     def load_model_data(self, filename):

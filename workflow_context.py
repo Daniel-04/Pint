@@ -30,12 +30,14 @@ class WorkflowContext:
 
         # Responses are stored so that they are not repeated later
         # If you want to clear the cache, delete the cache folder, or you can change the key in the specific api file
-        self.data_folder = model_data.resolve_path(
-            model_data.get("files_folder", "files")
+        self.data_folder = model_data.get(
+            "files_folder", model_data.resolve_path("files")
         )
-        self.cache_folder = model_data.get("cache_folder", "cache/api")
+        self.cache_folder = model_data.get(
+            "cache_folder", model_data.resolve_path("cache/api")
+        )
         self.data_cache_folder = model_data.get(
-            "self_data.data_cache_folder", "cache/data"
+            "self_data.data_cache_folder", model_data.resolve_path("cache/data")
         )
 
         self.which_api = model_data.get("model")
