@@ -1,17 +1,36 @@
 import os
 
+try:
+    from openai import OpenAI
+    import openai
+
+    RETRY_EXCEPTIONS = (
+        openai.APIConnectionError,
+        openai.APITimeoutError,
+        openai.RateLimitError,
+        openai.InternalServerError,
+    )
+    OPENAI_AVAILABLE = True
+except ModuleNotFoundError:
+    openai = None
+    RETRY_EXCEPTIONS = ()
+    OPENAI_AVAILABLE = False
+
 from .prompt_cache_sqlite import PromptCache
 from .retry import retry
 
 
 class OpenAIEngine:
-    def __init__(self, model_data, key=None, cache_folder="cache", max_tokens=4096):
-        try:
-            from openai import OpenAI
-        except ModuleNotFoundError as e:
-            raise RuntimeError(
-                "To use ChatGPT, the openai package must be installed."
-            ) from e
+    def __init__(
+        self,
+        model_data,
+        key=None,
+        api_url="https://api.openai.com/v1",
+        cache_folder="cache",
+        max_tokens=4096,
+    ):
+        if not OPENAI_AVAILABLE:
+            raise RuntimeError("To use ChatGPT, the openai package must be installed.")
 
         if key is None:
             key = os.environ.get("OPENAI_API_KEY")
@@ -19,7 +38,8 @@ class OpenAIEngine:
             raise RuntimeError("OPENAI_API_KEY environment variable is not set.")
         self.model_engine = model_data.get("model_name")
         self.max_tokens = max_tokens
-        self.client = OpenAI(api_key=key)
+        self.client = OpenAI(api_key=key, base_url=api_url)
+        print(OpenAI)
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
@@ -32,7 +52,7 @@ class OpenAIEngine:
         return response["choices"][0]["message"]["content"]
 
     # create_chat_completion is used internally for API compatibility
-    @retry
+    @retry(exceptions=RETRY_EXCEPTIONS)
     def create_chat_completion(self, messages):
         system = "".join(m["content"] for m in messages if m["role"] == "system")
         prompt = "".join(m["content"] for m in messages if m["role"] == "user")

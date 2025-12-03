@@ -42,6 +42,7 @@ class WorkflowContext:
 
         self.which_api = model_data.get("model")
         self.api_key = model_data.get("api_key")
+        self.api_url = model_data.get("api_url")
 
         self.column_name = model_data.get("column_name", "pubmed_id")
         # There is an alternative to use a local script to get pubmed data
@@ -66,21 +67,19 @@ class WorkflowContext:
         self.__init__(model_data)
 
     def setup_llm_engine(self, model_data):
+        engine_kwargs = {
+            "model_data": model_data,
+            "cache_folder": self.cache_folder,
+            "max_tokens": self.max_tokens,
+        }
+        if self.api_key:
+            engine_kwargs["key"] = self.api_key
+        if self.api_url:
+            engine_kwargs["api_url"] = self.api_url
+
         if self.which_api == "claude":
-            self.llm_engine = ClaudeEngine(
-                model_data,
-                key=self.api_key,
-                cache_folder=self.cache_folder,
-                max_tokens=self.max_tokens,
-            )
+            self.llm_engine = ClaudeEngine(**engine_kwargs)
         elif self.which_api == "openai":
-            self.llm_engine = OpenAIEngine(
-                model_data,
-                key=self.api_key,
-                cache_folder=self.cache_folder,
-                max_tokens=self.max_tokens,
-            )
+            self.llm_engine = OpenAIEngine(**engine_kwargs)
         elif self.which_api == "external":
-            self.llm_engine = ExternalEngine(
-                model_data, cache_folder=self.cache_folder, max_tokens=self.max_tokens
-            )
+            self.llm_engine = ExternalEngine(**engine_kwargs)

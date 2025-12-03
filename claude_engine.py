@@ -1,18 +1,37 @@
 import os
 
+try:
+    import anthropic
+
+    RETRY_EXCEPTIONS = (
+        anthropic.APIConnectionError,
+        anthropic.APITimeoutError,
+        anthropic.RateLimitError,
+        anthropic.InternalServerError,
+    )
+    ANTHROPIC_AVAILABLE = True
+except ModuleNotFoundError:
+    anthropic = None
+    RETRY_EXCEPTIONS = ()
+    ANTHROPIC_AVAILABLE = False
+
 from .prompt_cache_sqlite import PromptCache
 from .retry import retry
 
 
 class ClaudeEngine:
-
-    def __init__(self, model_data, key=None, cache_folder="cache", max_tokens=4096):
-        try:
-            import anthropic
-        except ModuleNotFoundError as e:
+    def __init__(
+        self,
+        model_data,
+        key=None,
+        api_url="https://api.anthropic.com",
+        cache_folder="cache",
+        max_tokens=4096,
+    ):
+        if not ANTHROPIC_AVAILABLE:
             raise RuntimeError(
                 "To use Claude, the anthropic package must be installed."
-            ) from e
+            )
 
         if key is None:
             key = os.environ.get("ANTHROPIC_API_KEY")
@@ -20,7 +39,7 @@ class ClaudeEngine:
             raise RuntimeError("ANTHROPIC_API_KEY environment variable is not set.")
         self.model_engine = model_data.get("model_name")
         self.max_tokens = max_tokens
-        self.client = anthropic.Anthropic(api_key=key)
+        self.client = anthropic.Anthropic(api_key=key, base_url=api_url)
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
@@ -33,7 +52,7 @@ class ClaudeEngine:
         return response["choices"][0]["message"]["content"]
 
     # This is used for API compatibility
-    @retry
+    @retry(exceptions=RETRY_EXCEPTIONS)
     def create_chat_completion(self, messages):
         system_msg = "".join(m["content"] for m in messages if m["role"] == "system")
 
