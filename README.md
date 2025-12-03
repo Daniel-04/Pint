@@ -64,6 +64,15 @@ python -m pint_lib test_config_pdf.xlsx
 
 Configuration is handled via Excel or CSV files.  
 
+## Usage with [llm_server](https://github.com/PubLLicanProject/llm_server)
+Run `pip install Pint` in the venv created by the `build.sh` script of llm_server.
+Then, in the config set:
+- model: openai
+- model_name: [name of the ollama model to use]
+- api_url: http://localhost:11434/v1 (The actual port may be different, check when activating the venv)
+- api_key: ollama
+While the venv is activated, run pint.
+
 ## Notes
 
 - You can substitute CSV files for Excel files throughout, though Excel provides better document formatting.
