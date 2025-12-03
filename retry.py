@@ -1,18 +1,28 @@
+import math
 import time
 import functools
 
 
-def retry(func=None, *, num_tries=3, timeout=5, exceptions=(Exception,)):
+def retry(
+    func=None, *, num_tries=None, timeout=2, max_timeout=3600, exceptions=(Exception,)
+):
     def deco(f):
         @functools.wraps(f)
         def wrap(*args, **kwargs):
+            if num_tries is None:
+                tries = math.ceil(math.log(max_timeout / timeout, 2)) + 1
+            else:
+                tries = num_tries
+            delay = timeout
             last_e = None
-            for _ in range(num_tries):
+
+            for _ in range(tries):
                 try:
                     return f(*args, **kwargs)
                 except exceptions as e:
                     last_e = e
-                    time.sleep(timeout)
+                    time.sleep(delay)
+                    delay = min(delay * 2, max_timeout)
             raise last_e
 
         return wrap
