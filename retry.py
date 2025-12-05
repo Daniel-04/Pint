@@ -20,6 +20,9 @@ def retry(
                 try:
                     return f(*args, **kwargs)
                 except exceptions as e:
+                    print(
+                        f"In function {f} caught exception {e}, retrying in {delay} seconds."
+                    )
                     last_e = e
                     time.sleep(delay)
                     delay = min(delay * 2, max_timeout)
