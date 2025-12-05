@@ -77,9 +77,10 @@ class WorkflowContext:
         if self.api_url:
             engine_kwargs["api_url"] = self.api_url
 
-        if self.which_api == "claude":
+        api_name = self.which_api.lower()
+        if api_name.startswith(("claude", "anthropic")):
             self.llm_engine = ClaudeEngine(**engine_kwargs)
-        elif self.which_api == "openai":
+        elif api_name.startswith(("gpt", "chatgpt", "openai")):
             self.llm_engine = OpenAIEngine(**engine_kwargs)
-        elif self.which_api == "external":
+        elif api_name.startswith(("external", "local", "ollama")):
             self.llm_engine = ExternalEngine(**engine_kwargs)
