@@ -27,7 +27,7 @@ class PromptCache:
 
     def _generate_hash(self, model_engine, system, prompt):
 
-        hashkey = ".".join(["prompt-caching-v1", model_engine, system, prompt])
+        hashkey = ".".join(["prompt-caching-v1", str(model_engine), system, prompt])
         return hashlib.md5(hashkey.encode()).hexdigest()
 
     def get_cached_response(self, model_engine, system, prompt):
