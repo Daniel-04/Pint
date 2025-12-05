@@ -53,11 +53,10 @@ The configuration file (Excel or CSV format) controls all aspects of processing:
 
 ## Example
 
-A simple example using PDF files is provided in the example folder:
+Simple examples using PDF files are provided in the examples folder:
 
 ```bash
-cd example
-python -m pint_lib test_config_pdf.xlsx
+python -m pint_lib examples/Claude/test_config_pdf.xlsx
 ```
 
 ## Configuration
