@@ -4,6 +4,7 @@ import os
 import json
 import subprocess
 import sys
+import re
 
 from . import utils as u
 from .parse_pubmed_json import parse_pubmed_data
@@ -62,7 +63,9 @@ def preprocess_prompt(prompt, ctx, max_length=None, escape=False, overlap=500):
                 new_text = repr(new_text)
 
             # Record information about each substitution
-            for match_pos in find_all_occurrences(result, placeholder):
+            for match_pos in [
+                m.start() for m in re.finditer(f"(?={re.escape(placeholder)})", result)
+            ]:
                 substitutions.append(
                     {
                         "key": key,
@@ -514,24 +517,23 @@ def save_output(data, csv_file, json_file, ctx):
         traceback.print_exc(file=sys.stdout)
 
 
-def find_all_occurrences(text, substring):
-    """Helper function to find all occurrences of a substring in text"""
-    positions = []
-    start = 0
-    while True:
-        start = text.find(substring, start)
-        if start == -1:
-            break
-        positions.append(start)
-        start += 1
-    return positions
+NEWLINE_CHARS = [
+    "\r\n",  # CRLF
+    "\r",  # CR
+    "\n",  # LF
+    "\f",  # FORM FEED
+    "\v",  # VERTICAL TAB
+    "\u0085",  # NEXT LINE
+    "\u2028",  # LINE SEPARATOR
+    "\u2029",  # PARAGRAPH SEPARATOR
+]
+newline_re = re.compile("|".join(map(re.escape, NEWLINE_CHARS)))
 
 
-def normalize_newlines(text):
-    if isinstance(text, str):
-        text = text[:10000]
-        text = text.replace('"', "")
+def normalize_newlines(text, max_len=10000):
+    if not isinstance(text, str):
+        return text
 
-        text = text.replace("\r", "")
-        return text.replace("\n", " \\n ")
-    return text
+    text = text[:max_len]
+    text = text.replace('"', "")
+    return newline_re.sub(r" \n ", text)
