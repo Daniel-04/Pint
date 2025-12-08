@@ -2,7 +2,11 @@ import json
 import re
 
 
-def is_one_token(s):
+def isError(answer, param=None):
+    return param.script_returncode != 0
+
+
+def is_one_token(s, param=None):
     return bool(re.fullmatch(r"\[\w+\]", s))
 
 
