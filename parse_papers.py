@@ -129,8 +129,15 @@ def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context
     print(ctx.ordered_column_list)
 
     # Save outputs
-    save_output(ctx.final_output, output_file, output_file_json, ctx)
-    save_output(ctx.debug, debug_output_file, debug_output_file_json, ctx)
+    if ctx.final_output:
+        save_output(ctx.final_output, output_file, output_file_json, ctx)
+    else:
+        print(f"No final output to save to {output_file}")
+
+    if ctx.debug:
+        save_output(ctx.debug, debug_output_file, debug_output_file_json, ctx)
+    else:
+        print(f"No debug output to save to {debug_output_file}")
 
     return processed_documents
 
