@@ -111,8 +111,7 @@ def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context
             print(f"Skipping {pubmed_id}: {e}.")
             continue
         except Exception as e:
-            print(e)
-            print("error with", pubmed_id)
+            print(f"Error with {pubmed_id}: {e}")
             log_traceback(model_data.get("error_file", "error.log"))
 
         if ctx.max_docs is not None:
@@ -173,8 +172,7 @@ def search_for_pubmed_ids(search_script, search_term, search_options):
             pubmed_ids = result_text.splitlines()
 
     except subprocess.CalledProcessError as e:
-        print("Error running search script")
-        print(e)
+        print(f"Error running search script: {e}")
 
     return pubmed_ids[1:], pubmed_ids[0]
 

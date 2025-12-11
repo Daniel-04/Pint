@@ -149,8 +149,7 @@ def get_text_from_prompt(prompt, system, ctx, model_data):
         try:
             result = str(eval(full_prompt))
         except Exception as e:
-            print("Error processing python prompt")
-            print(e)
+            print(f"Error processing python prompt {full_prompt}: {e}")
             log_traceback(model_data.get("error_file", "error.log"))
 
         result = " ".join(result.split())
@@ -300,7 +299,7 @@ def get_pubmed_from_local(pubmed_id, model_data):
         data = subprocess.check_output([script_path, pubmed_id])
         data = json.loads(data)
     except subprocess.CalledProcessError as e:
-        print("Error", e)
+        print(f"Error: {e}")
 
     return data
 
@@ -318,9 +317,8 @@ def get_text_from_local(filename, ctx):
             all_text = extract_text(filename)
         except Exception as e:
             print(
-                "Error processing pdf - pfminder.six must be installed, or use text or json files"
+                f"Error processing pdf - pfminder.six must be installed, or use text or json files: {e}"
             )
-            print(e)
             log_traceback()
 
     elif filename.lower().endswith(".json"):
@@ -503,17 +501,14 @@ def save_output(data, csv_file, json_file, ctx, model_data):
     try:
         output_csv(data, csv_file, ctx)
     except Exception as e:
-        print("error", csv_file)
-        print(e)
+        print(f"Error saving to {csv_file}: {e}")
         log_traceback(model_data.get("error_file", "error.log"))
 
     try:
         with open(json_file, "w", encoding="utf-8") as json_out:
             json.dump(data, json_out, indent=4)
     except Exception as e:
-
-        print("error", json_file)
-        print(e)
+        print(f"Error saving to {json_file}: {e}")
         log_traceback(model_data.get("error_file", "error.log"))
 
 
