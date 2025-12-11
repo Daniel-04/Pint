@@ -11,15 +11,13 @@ def is_one_token(s, param=None):
 
 
 def isYes(answer, param=None):
-    text = answer.lower().strip()
-
-    return text in ("yes", "yes.", "y", "true", "t", "1")
+    pattern = re.compile(r"^\s*[^\w_]*?(?:y(?:es)?|t(?:rue)?|1)\b", re.IGNORECASE)
+    return bool(pattern.search(answer))
 
 
 def isNo(answer, param=None):
-    text = answer.lower().strip()
-
-    return text in ("no", "no.", "n", "false", "f", "0")
+    pattern = re.compile(r"^\s*[^\w_]*?(?:n(?:o)?|f(?:alse)?|0)\b", re.IGNORECASE)
+    return bool(pattern.search(answer))
 
 
 def isShort(answer, param=None):

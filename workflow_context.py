@@ -1,5 +1,6 @@
 import sys
 
+from .utils import isYes
 from .claude_engine import ClaudeEngine
 from .open_ai_engine import OpenAIEngine
 from .external_engine import ExternalEngine
@@ -46,12 +47,8 @@ class WorkflowContext:
 
         self.column_name = model_data.get("column_name", "pubmed_id")
         # There is an alternative to use a local script to get pubmed data
-        self.use_pubmed_api = (
-            model_data.get("use_pubmed_api", "true").strip().lower() == "true"
-        )
-        self.use_pubmed_search = (
-            model_data.get("use_pubmed_search", "false").strip().lower() == "true"
-        )
+        self.use_pubmed_api = isYes(model_data.get("use_pubmed_api", "true"))
+        self.use_pubmed_search = isYes(model_data.get("use_pubmed_search", "false"))
 
         # Runtime state
         self.data_store = {}

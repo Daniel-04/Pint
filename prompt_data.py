@@ -6,6 +6,8 @@ try:
 except ImportError:
     print("To use an Excel file openpyxl must be installed.")
 
+from .utils import isYes
+
 
 # parses the prompts spreadsheet into the data format already used
 # see end of file for format description
@@ -28,10 +30,7 @@ class PromptDataParser:
             # Add derived fields
             prompt_dict["putVariable"] = prompt_dict["name"]
             prompt_dict["dataOut"] = False
-            if "includeOutput" in row_dict and (
-                row_dict["includeOutput"].strip().lower() == "true"
-                or row_dict["includeOutput"].strip() == "1"
-            ):
+            if "includeOutput" in row_dict and isYes(row_dict["includeOutput"]):
                 prompt_dict["dataOut"] = True
 
             # Add prompts list (remaining non-empty values)
