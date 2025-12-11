@@ -39,7 +39,6 @@ class OpenAIEngine:
         self.model_engine = model_data.get("model_name")
         self.max_tokens = max_tokens
         self.client = OpenAI(api_key=key, base_url=api_url)
-        print(OpenAI)
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
