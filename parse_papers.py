@@ -1,4 +1,3 @@
-import traceback
 import csv
 import os
 import json
@@ -7,6 +6,7 @@ import sys
 import re
 import shlex
 
+from .utils import log_traceback
 from .process_papers import process_pubmed_id, save_output
 
 from .workflow_context import WorkflowContext
@@ -113,14 +113,18 @@ def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context
         except Exception as e:
             print(e)
             print("error with", pubmed_id)
-            traceback.print_exc(file=sys.stdout)
+            log_traceback(model_data.get("error_file", "error.log"))
 
         if ctx.max_docs is not None:
             if len(ctx.final_output) >= ctx.max_docs:
                 break
         if len(ctx.final_output) > 0:
-            save_output(ctx.final_output, output_file, output_file_json, ctx)
-            save_output(ctx.debug, debug_output_file, debug_output_file_json, ctx)
+            save_output(
+                ctx.final_output, output_file, output_file_json, ctx, model_data
+            )
+            save_output(
+                ctx.debug, debug_output_file, debug_output_file_json, ctx, model_data
+            )
         else:
             print("no output", pubmed_id)
 
@@ -130,12 +134,14 @@ def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context
 
     # Save outputs
     if ctx.final_output:
-        save_output(ctx.final_output, output_file, output_file_json, ctx)
+        save_output(ctx.final_output, output_file, output_file_json, ctx, model_data)
     else:
         print(f"No final output to save to {output_file}")
 
     if ctx.debug:
-        save_output(ctx.debug, debug_output_file, debug_output_file_json, ctx)
+        save_output(
+            ctx.debug, debug_output_file, debug_output_file_json, ctx, model_data
+        )
     else:
         print(f"No debug output to save to {debug_output_file}")
 

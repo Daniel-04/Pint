@@ -1,4 +1,3 @@
-import traceback
 import csv
 import os
 import json
@@ -6,6 +5,7 @@ import subprocess
 import sys
 import re
 
+from .utils import log_traceback
 from . import utils as u
 from .parse_pubmed_json import parse_pubmed_data
 
@@ -151,7 +151,7 @@ def get_text_from_prompt(prompt, system, ctx, model_data):
         except Exception as e:
             print("Error processing python prompt")
             print(e)
-            traceback.print_exc(file=sys.stdout)
+            log_traceback(model_data.get("error_file", "error.log"))
 
         result = " ".join(result.split())
         return result
@@ -287,7 +287,7 @@ def process_document(pmid, document_data, ctx, model_data, parser):
 
     except Exception as e:
         print(f"Error processing document {pmid}: {e}")
-        traceback.print_exc(file=sys.stdout)
+        log_traceback(model_data.get("error_file", "error.log"))
         return None
 
 
@@ -321,7 +321,7 @@ def get_text_from_local(filename, ctx):
                 "Error processing pdf - pfminder.six must be installed, or use text or json files"
             )
             print(e)
-            traceback.print_exc(file=sys.stdout)
+            log_traceback()
 
     elif filename.lower().endswith(".json"):
         with open(filename, "r", encoding="utf-8") as file:
@@ -499,13 +499,13 @@ def output_csv(output_data, outputfile, ctx):
             writer.writerow(normalized_row)
 
 
-def save_output(data, csv_file, json_file, ctx):
+def save_output(data, csv_file, json_file, ctx, model_data):
     try:
         output_csv(data, csv_file, ctx)
     except Exception as e:
         print("error", csv_file)
         print(e)
-        traceback.print_exc(file=sys.stdout)
+        log_traceback(model_data.get("error_file", "error.log"))
 
     try:
         with open(json_file, "w", encoding="utf-8") as json_out:
@@ -514,7 +514,7 @@ def save_output(data, csv_file, json_file, ctx):
 
         print("error", json_file)
         print(e)
-        traceback.print_exc(file=sys.stdout)
+        log_traceback(model_data.get("error_file", "error.log"))
 
 
 NEWLINE_CHARS = [

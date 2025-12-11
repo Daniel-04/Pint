@@ -1,5 +1,11 @@
+import traceback
 import json
 import re
+
+
+def log_traceback(logfile="error.log"):
+    with open(logfile, "a", encoding="utf-8") as file:
+        traceback.print_exc(file=file)
 
 
 def isError(answer, param=None):

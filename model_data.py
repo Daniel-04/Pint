@@ -24,7 +24,7 @@ class ModelDataLoader:
                 if item_str:  # Only add non-empty strings
                     values.append(item_str)
 
-            if key.lower().endswith(("folder", "root", "path")):
+            if key.lower().endswith(("folder", "root", "path", "file")):
                 values = [self.resolve_path(v) for v in values]
 
             self.data[key] = values[0] if len(values) == 1 else values
@@ -41,7 +41,9 @@ class ModelDataLoader:
                     reader = csv.reader(f)
                     self.process_rows(reader)
             except Exception as e:
-                raise RuntimeError(f"Error reading CSV config file {filename}: {e}") from e
+                raise RuntimeError(
+                    f"Error reading CSV config file {filename}: {e}"
+                ) from e
         elif filename.lower().endswith(".xlsx"):
             try:
                 import openpyxl
@@ -54,7 +56,9 @@ class ModelDataLoader:
                 sheet = wb.active
                 self.process_rows(sheet.iter_rows(values_only=True))
             except Exception as e:
-                raise RuntimeError(f"Error reading Excel config file {filename}: {e}") from e
+                raise RuntimeError(
+                    f"Error reading Excel config file {filename}: {e}"
+                ) from e
         else:
             raise ValueError(f"Unsupported configuration file format: {filename}")
 
