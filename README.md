@@ -68,7 +68,7 @@ Run `pip install Pint` in the venv created by the `build.sh` script of llm_serve
 Then, in the config set:
 - model: openai
 - model_name: [name of the ollama model to use]
-- api_url: http://localhost:11434/v1 (The actual port may be different, check when activating the venv)
+- api_url: http://localhost:11434/v1 (The actual port may be different, check when activating the venv, or export OLLAMA_HOST=127.0.0.1:11434)
 - api_key: ollama
 While the venv is activated, run pint.
 
