@@ -354,12 +354,13 @@ def get_pubmed_from_api(pubmed_id, model_data):
             "To use an External PubMed API, requests must be installed."
         ) from e
     api_url = (
-        "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_json/"
+        model_data.get(
+            "pubmed_url",
+            "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_json/",
+        )
         + str(pubmed_id)
         + "/unicode"
     )
-    if "pubmed_url" in model_data.data:
-        api_url = model_data.get("pubmed_url") + str(pubmed_id) + "/unicode"
 
     data = []
     try:
