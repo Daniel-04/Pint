@@ -3,3 +3,4 @@ openpyxl
 anthropic
 openai
 requests
+tkinter
