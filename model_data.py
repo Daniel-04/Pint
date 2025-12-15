@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 
 
@@ -58,6 +59,24 @@ class ModelDataLoader:
             except Exception as e:
                 raise RuntimeError(
                     f"Error reading Excel config file {filename}: {e}"
+                ) from e
+        elif filename.lower().endswith(".json"):
+            try:
+                with open(filename, "r", newline="", encoding="utf-8") as f:
+                    if not isinstance(data, dict):
+                        raise ValueError("Config must be a JSON object (key-value mapping)")
+
+                    rows = []
+                    for key, value in data.items():
+                        if isinstance(value, list):
+                            rows.append([key, *value])
+                        else:
+                            rows.append([key, value])
+
+                    self.process_rows(rows)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Error reading JSON config file {filename}: {e}"
                 ) from e
         else:
             raise ValueError(f"Unsupported configuration file format: {filename}")

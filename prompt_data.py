@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 
 try:
@@ -70,12 +71,41 @@ class PromptDataParser:
 
         return self.process_rows(rows, headers)
 
+    def read_prompt_json(self, file_path):
+        with open(file_path, newline="", encoding="utf-8") as jsonfile:
+            data = json.load(jsonfile)
+
+            if not isinstance(data, list) or not data:
+                raise ValueError("Must be a non-empty list of JSON objects")
+
+            headers = [str(key) for key in data[0].keys()]
+
+            rows = []
+            for item in data:
+                if not isinstance(item, dict):
+                    raise ValueError("Each item in list must be JSON object")
+
+                row = []
+                for header in headers:
+                    value = item.get(header, "")
+                    if value is None:
+                        row.append("")
+                    elif isinstance(value, list):
+                        row.extend(value)
+                    else:
+                        row.append(str(value))
+                rows.append(row)
+
+            return self.process_rows(rows, headers)
+
     def read_prompt(self, file_path):
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Prompt file not found: {file_path}")
 
         if file_path.lower().endswith(".xlsx"):
             return self.read_prompt_xlsx(file_path)
+        if file_path.lower().endswith(".json"):
+            return self.read_prompt_json(file_path)
         if file_path.lower().endswith(".csv"):
             return self.read_prompt_tsv(file_path, delimiter=",")
         return self.read_prompt_tsv(file_path)
