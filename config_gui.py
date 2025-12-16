@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox
+import csv
+import shlex
+import json
 import re
 
 PAD_X = 10
@@ -174,65 +177,67 @@ def create_tabs(parent):
 
 def load_config(infile, parent):
     with open(infile, "r", encoding="utf-8") as file:
-        for line in file:
-            parts = line.strip().split(",")
-            key, *values = parts
-            values = ",".join(values).rstrip(",")
+        reader = csv.reader(file)
+        for row in reader:
+            if not row:
+                continue
+
+            key = row[0]
+            values = row[1:]
+            display_value = shlex.join(values)
 
             var = config.get(key)
             if var is None:
-                add_config_row(parent, key, values)
+                add_config_row(parent, key, display_value)
                 continue
 
             if isinstance(var, tk.BooleanVar):
-                var.set(isYes(values))
+                var.set(isYes(display_value))
             else:
-                var.set(values)
+                var.set(display_value)
 
 
 def save_config(outfile):
-    pairs = [[key, *str(widget.get()).split(",")] for key, widget in config.items()]
-    longest = max(map(len, pairs))
-    rows = []
-    for row in pairs:
-        padded = row + [""] * (longest - len(row))
-        rows.append(",".join(padded))
-
     with open(outfile, "w", encoding="utf-8") as file:
-        file.write("\n".join(rows))
+        writer = csv.writer(file)
+        for key, widget in config.items():
+            raw = str(widget.get())
 
+            try:
+                parsed = shlex.split(raw)
+            except Exception as e:
+                raise ValueError(f"Errr parsing value for key {key}: {e}")
+
+            writer.writerow([key] + parsed)
 
 def load_prompts(infile, parent):
-    with open(infile, "r", encoding="utf-8") as f:
-        for line in f:
-            parts = line.strip().split(",")
-            if len(parts) < 6:
-                continue
+    with open(infile, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        for parts in reader:
             data = {
-                "Name": parts[0],
-                "System": parts[1],
-                "includeOutput": isYes(parts[2]),
-                "skipPrompt": isYes(parts[3]),
-                "skipTest": parts[4],
-                "prompt": parts[5],
+                "Name": (parts[0:1] or [""])[0],
+                "System": (parts[1:2] or [""])[0],
+                "includeOutput": isYes((parts[2:3] or ["False"])[0]),
+                "skipPrompt": isYes((parts[3:4] or ["False"])[0]),
+                "skipTest": (parts[4:5] or [""])[0],
+                "prompt": shlex.join(parts[5:] or [""]),
             }
             add_prompt_row(parent, data)
 
 
 def save_prompts(outfile):
-    rows = []
-    for row_vars in prompts.values():
-        row = [
-            row_vars["Name"].get(),
-            row_vars["System"].get(),
-            str(row_vars["includeOutput"].get()),
-            str(row_vars["skipPrompt"].get()),
-            row_vars["skipTest"].get(),
-            row_vars["prompt"].get(),
-        ]
-        rows.append(",".join(row))
-    with open(outfile, "w", encoding="utf-8") as f:
-        f.write("\n".join(rows))
+    with open(outfile, "w", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        for row_vars in prompts.values():
+            row = [
+                row_vars["Name"].get(),
+                row_vars["System"].get(),
+                str(row_vars["includeOutput"].get()),
+                str(row_vars["skipPrompt"].get()),
+                row_vars["skipTest"].get(),
+                *shlex.split(row_vars["prompt"].get()),
+            ]
+            writer.writerow(row)
 
 
 def on_save(save_func):
