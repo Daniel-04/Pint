@@ -29,7 +29,7 @@ def setup(ctx=context):
 
 def read_pubmed_ids(file_path, column_name):
     """
-    Reads PubMed IDs from a specified column in either a CSV or XLSX file.
+    Reads PubMed IDs from a specified column in either a CSV, XLSX, or JSON file.
     Returns a list of PubMed IDs.
     """
     pubmed_ids = []
@@ -71,6 +71,19 @@ def read_pubmed_ids(file_path, column_name):
                 pubmed_ids.append(
                     str(row[0].value)
                 )  # Convert to string to ensure consistency
+
+    elif file_path.endswith(".json"):
+        with open(file_path, mode="r", encoding="utf-8") as jsonfile:
+            data = json.load(jsonfile)
+
+            if not isinstance(data, list):
+                raise ValueError("File list be a JSON list of strings or {column_name:id} dicts")
+
+            for elem in data:
+                if isinstance(elem, str):
+                    pubmed_ids.append(elem)
+                elif isinstance(elem, dict):
+                    pubmed_ids.append(elem.get(column_name))
 
     return pubmed_ids
 
