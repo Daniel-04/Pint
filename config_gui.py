@@ -177,73 +177,130 @@ def create_tabs(parent):
 
 def load_config(infile, parent):
     with open(infile, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if not row:
-                continue
+        if infile.lower().endswith(".json"):
+            data = json.load(file)
 
-            key = row[0]
-            values = row[1:]
-            display_value = shlex.join(values)
+            for key, value in data.items():
+                var = config.get(key)
 
-            var = config.get(key)
-            if var is None:
-                add_config_row(parent, key, display_value)
-                continue
+                if var is None:
+                    val = str(value)
+                    add_config_row(parent, key, val)
+                    continue
 
-            if isinstance(var, tk.BooleanVar):
-                var.set(isYes(display_value))
-            else:
-                var.set(display_value)
+                if isinstance(var, tk.BooleanVar):
+                    if isinstance(value, bool):
+                        var.set(value)
+                    else:
+                        var.set(isYes(str(value)))
+                else:
+                    var.set(value)
+        else:
+            reader = csv.reader(file)
+            for row in reader:
+                if not row:
+                    continue
+
+                key = row[0]
+                values = row[1:]
+                display_value = shlex.join(values)
+
+                var = config.get(key)
+                if var is None:
+                    add_config_row(parent, key, display_value)
+                    continue
+
+                if isinstance(var, tk.BooleanVar):
+                    var.set(isYes(display_value))
+                else:
+                    var.set(display_value)
 
 
 def save_config(outfile):
     with open(outfile, "w", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        for key, widget in config.items():
-            raw = str(widget.get())
+        if outfile.lower().endswith(".json"):
+            data = {key: widget.get() for key, widget in config.items()}
+            json.dump(data, file)
+        else:
+            writer = csv.writer(file)
+            for key, widget in config.items():
+                raw = str(widget.get())
 
-            try:
-                parsed = shlex.split(raw)
-            except Exception as e:
-                raise ValueError(f"Errr parsing value for key {key}: {e}")
+                try:
+                    parsed = shlex.split(raw)
+                except Exception as e:
+                    raise ValueError(f"Errr parsing value for key {key}: {e}")
 
-            writer.writerow([key] + parsed)
+                writer.writerow([key] + parsed)
 
 def load_prompts(infile, parent):
     with open(infile, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        for parts in reader:
-            data = {
-                "Name": (parts[0:1] or [""])[0],
-                "System": (parts[1:2] or [""])[0],
-                "includeOutput": isYes((parts[2:3] or ["False"])[0]),
-                "skipPrompt": isYes((parts[3:4] or ["False"])[0]),
-                "skipTest": (parts[4:5] or [""])[0],
-                "prompt": shlex.join(parts[5:] or [""]),
-            }
-            add_prompt_row(parent, data)
+        if infile.lower().endswith(".json"):
+            data_list = json.load(file)
+
+            for item in data_list:
+                data = {
+                    "Name": item.get("Name", ""),
+                    "System": item.get("System", ""),
+                    "includeOutput": item.get("includeOutput", False),
+                    "skipPrompt": item.get("skipPrompt", False),
+                    "skipTest": item.get("skipTest", ""),
+                    "prompt": item.get("prompt", ""),
+                   }
+
+                if isinstance(data["includeOutput"], str):
+                    data["includeOutput"] = isYes(data["includeOutput"])
+                if isinstance(data["skipPrompt"], str):
+                    data["skipPrompt"] = isYes(data["skipPrompt"])
+
+                add_prompt_row(parent, data)
+        else:
+            reader = csv.reader(file)
+            for parts in reader:
+                data = {
+                    "Name": (parts[0:1] or [""])[0],
+                    "System": (parts[1:2] or [""])[0],
+                    "includeOutput": isYes((parts[2:3] or ["False"])[0]),
+                    "skipPrompt": isYes((parts[3:4] or ["False"])[0]),
+                    "skipTest": (parts[4:5] or [""])[0],
+                    "prompt": shlex.join(parts[5:] or [""]),
+                }
+                add_prompt_row(parent, data)
 
 
 def save_prompts(outfile):
     with open(outfile, "w", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        for row_vars in prompts.values():
-            row = [
-                row_vars["Name"].get(),
-                row_vars["System"].get(),
-                str(row_vars["includeOutput"].get()),
-                str(row_vars["skipPrompt"].get()),
-                row_vars["skipTest"].get(),
-                *shlex.split(row_vars["prompt"].get()),
-            ]
-            writer.writerow(row)
+        if outfile.lower().endswith(".json"):
+            data = []
+            for row_vars in prompts.values():
+                row = {
+                    "name": row_vars["Name"].get(),
+                    "system": row_vars["System"].get(),
+                    "includeOutput": str(row_vars["includeOutput"].get()),
+                    "skipPrompt": str(row_vars["skipPrompt"].get()),
+                    "skipTest": row_vars["skipTest"].get(),
+                    "prompt": shlex.split(row_vars["prompt"].get()),
+                }
+                data.append(row)
+            json.dump(data, file)
+        else:
+            writer = csv.writer(file)
+            for row_vars in prompts.values():
+                row = [
+                    row_vars["Name"].get(),
+                    row_vars["System"].get(),
+                    str(row_vars["includeOutput"].get()),
+                    str(row_vars["skipPrompt"].get()),
+                    row_vars["skipTest"].get(),
+                    *shlex.split(row_vars["prompt"].get()),
+                ]
+                writer.writerow(row)
 
 
 def on_save(save_func):
     outfile = filedialog.asksaveasfilename(
-        defaultextension=".csv",
-        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        defaultextension=".json",
+        filetypes=[("JSON files", "*.json"), ("CSV files", "*.csv"), ("All files", "*.*")],
     )
     if outfile:
         try:
@@ -255,7 +312,7 @@ def on_save(save_func):
 
 def on_load(load_func, parent):
     infile = filedialog.askopenfilename(
-        filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        filetypes=[("JSON files", "*.json"),  ("CSV files", "*.csv"), ("All files", "*.*")]
     )
     if infile:
         try:
