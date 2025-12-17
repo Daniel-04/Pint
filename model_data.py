@@ -63,6 +63,8 @@ class ModelDataLoader:
         elif filename.lower().endswith(".json"):
             try:
                 with open(filename, "r", newline="", encoding="utf-8") as f:
+                    data = json.load(f)
+
                     if not isinstance(data, dict):
                         raise ValueError("Config must be a JSON object (key-value mapping)")
 
