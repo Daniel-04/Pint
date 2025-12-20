@@ -229,7 +229,7 @@ def save_config(outfile):
                 try:
                     parsed = shlex.split(raw)
                 except Exception as e:
-                    raise ValueError(f"Errr parsing value for key {key}: {e}")
+                    raise ValueError(f"Error parsing value for key {key}: {e}")
 
                 writer.writerow([key] + parsed)
 
