@@ -202,17 +202,21 @@ def process_line(line, ctx, model_data):
     preCheck = None
     result = None
     if line["skipTest"]:
+
         preCheck = line["skipPrompt"]
 
         preCheckResult = get_text_from_prompt(
             preCheck, ctx.precheck_system, ctx, model_data
         )
-        preCheckTest = line["skipTest"].split()
-        param = preCheckTest[1] if len(preCheckTest) > 1 else ""
-
-        preCheckTest = preCheckTest[0]
-
-        preCheckTestFunction = prechecks.get(preCheckTest, u.isYes)
+        skip_test = line["skipTest"]
+        param = ""
+        if callable(skip_test):
+            preCheckTestFunction = skip_test
+        else:
+            parts = skip_test.split()
+            test_name = parts[0]
+            param = parts[1] if len(parts) > 1 else ""
+            preCheckTestFunction = prechecks.get(test_name, u.isYes)
 
         # if the answer is yes, then we jump to the next stage
         # If no, we will use this prompt
