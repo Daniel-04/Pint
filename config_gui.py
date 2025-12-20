@@ -193,7 +193,7 @@ def create_tabs(parent):
 
 
 def load_config(infile, parent):
-    with open(infile, "r", encoding="utf-8") as file:
+    with open(infile, "r", newline="", encoding="utf-8") as file:
         if infile.lower().endswith(".json"):
             data = json.load(file)
 
@@ -234,7 +234,7 @@ def load_config(infile, parent):
 
 
 def save_config(outfile):
-    with open(outfile, "w", encoding="utf-8") as file:
+    with open(outfile, "w", newline="", encoding="utf-8") as file:
         if outfile.lower().endswith(".json"):
             data = {key: widget.get() for key, widget in config.items()}
             json.dump(data, file)
@@ -252,7 +252,7 @@ def save_config(outfile):
 
 
 def load_prompts(infile, parent):
-    with open(infile, "r", encoding="utf-8") as file:
+    with open(infile, "r", newline="", encoding="utf-8") as file:
         if infile.lower().endswith(".json"):
             data_list = json.load(file)
 
@@ -287,7 +287,7 @@ def load_prompts(infile, parent):
 
 
 def save_prompts(outfile):
-    with open(outfile, "w", encoding="utf-8") as file:
+    with open(outfile, "w", newline="", encoding="utf-8") as file:
         if outfile.lower().endswith(".json"):
             data = []
             for row_vars in prompts.values():

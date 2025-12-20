@@ -37,7 +37,7 @@ def read_pubmed_ids(file_path, column_name):
     file_path = model_data.resolve_path(file_path)
 
     if file_path.endswith(".csv"):
-        with open(file_path, mode="r", newline="", encoding="utf-8") as csvfile:
+        with open(file_path, "r", newline="", encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile)
             if column_name not in reader.fieldnames:
                 raise ValueError(f"Column '{column_name}' not found in the CSV file.")
