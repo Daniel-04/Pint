@@ -8,6 +8,15 @@ import re
 
 PAD_X = 10
 PAD_Y = 2
+PROMPT_HEADERS = [
+    ("Name", 15),
+    ("System", 15),
+    ("Output?", 10),
+    ("Skip?", 8),
+    ("SkipTest", 10),
+    ("Prompt", 40),
+    ("", 3),
+]
 
 config = {}
 prompts = {}
@@ -113,17 +122,25 @@ def add_prompt_row(parent, data=None):
         prompts.pop(frame, None)
         frame.destroy()
 
-    entries = [
-        ttk.Entry(frame, textvariable=row_vars["Name"], width=15),
-        ttk.Entry(frame, textvariable=row_vars["System"], width=15),
-        ttk.Checkbutton(frame, variable=row_vars["includeOutput"]),
-        ttk.Checkbutton(frame, variable=row_vars["skipPrompt"]),
-        ttk.Entry(frame, textvariable=row_vars["skipTest"], width=10),
-        ttk.Entry(frame, textvariable=row_vars["prompt"], width=30),
-        ttk.Button(frame, text="-", width=2, command=delete_row),
+    def create_centered_check(parent_frame, var, width):
+        container = ttk.Frame(parent_frame)
+        ttk.Label(container, width=width).pack()
+        ttk.Checkbutton(container, variable=var).place(
+            relx=0.5, rely=0.5, anchor="center"
+        )
+        return container
+
+    widgets = [
+        ttk.Entry(frame, textvariable=row_vars["Name"], width=PROMPT_HEADERS[0][1]),
+        ttk.Entry(frame, textvariable=row_vars["System"], width=PROMPT_HEADERS[1][1]),
+        create_centered_check(frame, row_vars["includeOutput"], PROMPT_HEADERS[2][1]),
+        create_centered_check(frame, row_vars["skipPrompt"], PROMPT_HEADERS[3][1]),
+        ttk.Entry(frame, textvariable=row_vars["skipTest"], width=PROMPT_HEADERS[4][1]),
+        ttk.Entry(frame, textvariable=row_vars["prompt"], width=PROMPT_HEADERS[5][1]),
+        ttk.Button(frame, text="-", width=PROMPT_HEADERS[6][1], command=delete_row),
     ]
 
-    for i, widget in enumerate(entries):
+    for i, widget in enumerate(widgets):
         widget.grid(row=0, column=i, sticky="ew")
 
     frame.columnconfigure(5, weight=1)
@@ -233,6 +250,7 @@ def save_config(outfile):
 
                 writer.writerow([key] + parsed)
 
+
 def load_prompts(infile, parent):
     with open(infile, "r", encoding="utf-8") as file:
         if infile.lower().endswith(".json"):
@@ -246,7 +264,7 @@ def load_prompts(infile, parent):
                     "skipPrompt": item.get("skipPrompt", False),
                     "skipTest": item.get("skipTest", ""),
                     "prompt": item.get("prompt", ""),
-                   }
+                }
 
                 if isinstance(data["includeOutput"], str):
                     data["includeOutput"] = isYes(data["includeOutput"])
@@ -300,7 +318,11 @@ def save_prompts(outfile):
 def on_save(save_func):
     outfile = filedialog.asksaveasfilename(
         defaultextension=".json",
-        filetypes=[("JSON files", "*.json"), ("CSV files", "*.csv"), ("All files", "*.*")],
+        filetypes=[
+            ("JSON files", "*.json"),
+            ("CSV files", "*.csv"),
+            ("All files", "*.*"),
+        ],
     )
     if outfile:
         try:
@@ -312,7 +334,11 @@ def on_save(save_func):
 
 def on_load(load_func, parent):
     infile = filedialog.askopenfilename(
-        filetypes=[("JSON files", "*.json"),  ("CSV files", "*.csv"), ("All files", "*.*")]
+        filetypes=[
+            ("JSON files", "*.json"),
+            ("CSV files", "*.csv"),
+            ("All files", "*.*"),
+        ]
     )
     if infile:
         try:
@@ -414,19 +440,12 @@ def create_prompts_tab(parent, top):
     headers_frame = ttk.Frame(top)
     headers_frame.pack(fill="x", padx=PAD_X, pady=PAD_Y)
 
-    headers = [
-        "Name",
-        "System",
-        "includeOutput",
-        "skipPrompt",
-        "skipTest",
-        "prompt",
-        "",
-    ]
-    for i, h in enumerate(headers):
-        ttk.Label(headers_frame, text=h, width=15 if i < 6 else 2, anchor="w").grid(
-            row=0, column=i, sticky="w"
+    for i, (text, width) in enumerate(PROMPT_HEADERS):
+        ttk.Label(headers_frame, text=text, width=width, anchor="w").grid(
+            row=0, column=i, sticky="ew"
         )
+
+    headers_frame.columnconfigure(5, weight=1)
 
     add_prompt_btn = ttk.Button(
         parent,
