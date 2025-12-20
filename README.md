@@ -17,6 +17,7 @@ PINT allows you to process academic papers from PubMed using your choice of:
 * requests - to use PubMed API
 * anthropic - to use anthropic's Clause API
 * openai - to use OpenAI's ChatGPT API
+* tkinter - to use the config GUI
 
 ## Installation
 ```bash
