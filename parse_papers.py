@@ -13,8 +13,6 @@ from .workflow_context import WorkflowContext
 from .model_data import ModelDataLoader
 from .prompt_data import PromptDataParser
 
-print("starting...")
-
 model_data = ModelDataLoader()
 parser = PromptDataParser()
 context = WorkflowContext()
