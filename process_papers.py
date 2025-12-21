@@ -37,17 +37,6 @@ prechecks = {
 }
 
 
-def preprocess_prompt_old(prompt: str, ctx, escape: bool = False) -> str:
-    for key in ctx.data_store:
-        new_text = ctx.data_store[key]
-        if escape:
-            new_text = repr(new_text)
-
-        prompt = prompt.replace(f"[{key}]", new_text)
-
-    return prompt
-
-
 def preprocess_prompt(
     prompt: str,
     ctx,
@@ -465,30 +454,6 @@ def process_pubmed_id(
             result = process_document(pubmed_id, document_data, ctx, model_data, parser)
             if result:
                 ctx.final_output[pubmed_id] = result
-
-
-def output_csv_old(output_data, outputfile, ctx):
-    columns = set()
-    for key in output_data:
-        columns.update(output_data[key].keys())
-
-    # Convert the set to a sorted list to maintain column order
-    columns = sorted(columns)
-    column_name = ctx.column_name
-    # Step 2: Write to CSV
-    with open(outputfile, "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.DictWriter(
-            csvfile, fieldnames=[column_name] + columns, quoting=csv.QUOTE_ALL
-        )
-        writer.writeheader()
-
-        # Step 3: Write data rows
-        for key, values in output_data.items():
-            row = {column_name: key}  # Start row with the main key
-            row.update(values)  # Update the row with the nested dictionary
-            normalized_row = {k: normalize_newlines(v) for k, v in row.items()}
-
-            writer.writerow(normalized_row)
 
 
 def output_csv(output_data: Dict[str, Dict[str, str]], outputfile: str, ctx) -> None:
