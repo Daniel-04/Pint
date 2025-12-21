@@ -188,6 +188,29 @@ def get_text_from_prompt(prompt: str, system: str, ctx, model_data) -> str:
     return result
 
 
+def load_skiptest_from_py(py_text: str):
+    """
+    Expects something like:
+    #py
+    def my_skip(result, param):
+        return "yes" in result.lower()
+    """
+    code = py_text.lstrip("#py").strip()
+
+    local_ns = {}
+    try:
+        exec(code, {}, local_ns)
+    except Exception as e:
+        raise RuntimeError(f"Error defining skipTest function: {e}")
+
+    # Find the first callable defined
+    funcs = [v for v in local_ns.values() if callable(v)]
+    if not funcs:
+        raise ValueError("No function defined in #py skipTest")
+
+    return funcs[0]
+
+
 def process_line(line: Dict[str, Any], ctx, model_data) -> Optional[str]:
     system = line["system"]
 
@@ -198,13 +221,17 @@ def process_line(line: Dict[str, Any], ctx, model_data) -> Optional[str]:
     preCheck = None
     result = None
     if line["skipTest"]:
+        skip_test = line["skipTest"]
+
+        if isinstance(skip_test, str) and skip_test.startswith("#py"):
+            skip_test = load_skiptest_from_py(skip_test)
+            line["skipTest"] = skip_test
 
         preCheck = line["skipPrompt"]
-
         preCheckResult = get_text_from_prompt(
             preCheck, ctx.precheck_system, ctx, model_data
         )
-        skip_test = line["skipTest"]
+
         param = ""
         if callable(skip_test):
             preCheckTestFunction = skip_test
@@ -216,9 +243,7 @@ def process_line(line: Dict[str, Any], ctx, model_data) -> Optional[str]:
 
         # if the answer is yes, then we jump to the next stage
         # If no, we will use this prompt
-
         if preCheckTestFunction(preCheckResult, param):
-            #    print("Skipping",preCheckTest)
             return ctx.data_store["reply"]
 
     for prompt in line["prompts"]:
