@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import re
+from typing import List, Dict, Any, Optional
 
 from .utils import log_traceback
 from . import utils as u
@@ -36,7 +37,7 @@ prechecks = {
 }
 
 
-def preprocess_prompt_old(prompt, ctx, escape=False):
+def preprocess_prompt_old(prompt: str, ctx, escape: bool = False) -> str:
     for key in ctx.data_store:
         new_text = ctx.data_store[key]
         if escape:
@@ -47,7 +48,13 @@ def preprocess_prompt_old(prompt, ctx, escape=False):
     return prompt
 
 
-def preprocess_prompt(prompt, ctx, max_length=None, escape=False, overlap=500):
+def preprocess_prompt(
+    prompt: str,
+    ctx,
+    max_length: int = None,
+    escape: bool = False,
+    overlap: int = 500,
+) -> List[str]:
     if max_length is None:
         max_length = ctx.max_prompt_length
     # Track original text and substitutions for splitting later if needed
@@ -134,7 +141,7 @@ def preprocess_prompt(prompt, ctx, max_length=None, escape=False, overlap=500):
     return new_prompts
 
 
-def get_text_from_prompt(prompt, system, ctx, model_data):
+def get_text_from_prompt(prompt: str, system: str, ctx, model_data) -> str:
     if prompt.startswith("#py"):
         prompt = prompt[3:]
         if prompt.startswith("#python"):
@@ -192,7 +199,7 @@ def get_text_from_prompt(prompt, system, ctx, model_data):
     return result
 
 
-def process_line(line, ctx, model_data):
+def process_line(line: Dict[str, Any], ctx, model_data) -> Optional[str]:
     system = line["system"]
 
     name = line["name"]
@@ -253,7 +260,13 @@ def process_line(line, ctx, model_data):
     return result
 
 
-def process_document(pmid, document_data, ctx, model_data, parser):
+def process_document(
+    pmid: str,
+    document_data: Dict[str, Any],
+    ctx,
+    model_data,
+    parser,
+) -> Optional[Dict[str, str]]:
     try:
         text = document_data["text"]
         sections = document_data["sections"]
@@ -294,7 +307,7 @@ def process_document(pmid, document_data, ctx, model_data, parser):
         return None
 
 
-def get_pubmed_from_local(pubmed_id, model_data):
+def get_pubmed_from_local(pubmed_id: str, model_data):
     script_path = model_data.get("get_pubmed_path")
 
     # call an external script to get the data, passing in the pubmed id
@@ -308,7 +321,7 @@ def get_pubmed_from_local(pubmed_id, model_data):
     return data
 
 
-def get_text_from_local(filename, ctx):
+def get_text_from_local(filename: str, ctx) -> Dict[str, Any]:
     filename = os.path.join(ctx.data_folder, filename)
 
     if not os.path.exists(filename):
@@ -350,7 +363,7 @@ def get_text_from_local(filename, ctx):
     return data
 
 
-def get_pubmed_from_api(pubmed_id, model_data):
+def get_pubmed_from_api(pubmed_id: str, model_data):
     try:
         import requests
     except ModuleNotFoundError as e:
@@ -381,7 +394,13 @@ def get_pubmed_from_api(pubmed_id, model_data):
 
 
 # Function to fetch PubMed data via API or from a local file
-def fetch_pubmed_data(pubmed_id, sections_to_extract, data_folder, ctx, model_data):
+def fetch_pubmed_data(
+    pubmed_id: str,
+    sections_to_extract: List[str],
+    data_folder: str,
+    ctx,
+    model_data,
+) -> Dict[str, Any]:
     # if it is numberical or a PMC id, then we assume it is pubmed
     # otherwise we assume it is a local file
 
@@ -421,14 +440,14 @@ def fetch_pubmed_data(pubmed_id, sections_to_extract, data_folder, ctx, model_da
 
 # Function to process each PubMed ID
 def process_pubmed_id(
-    pubmed_id,
-    processed_documents,
-    sections_to_extract,
-    data_folder,
+    pubmed_id: str,
+    processed_documents: List[str],
+    sections_to_extract: List[str],
+    data_folder: str,
     ctx,
     model_data,
     parser,
-):
+) -> None:
     document_data = fetch_pubmed_data(
         pubmed_id, sections_to_extract, data_folder, ctx, model_data
     )
@@ -472,7 +491,7 @@ def output_csv_old(output_data, outputfile, ctx):
             writer.writerow(normalized_row)
 
 
-def output_csv(output_data, outputfile, ctx):
+def output_csv(output_data: Dict[str, Dict[str, str]], outputfile: str, ctx) -> None:
     columns = set()
     # column_name is the global for the key of the dictionary
     column_name = ctx.column_name
@@ -502,7 +521,9 @@ def output_csv(output_data, outputfile, ctx):
             writer.writerow(normalized_row)
 
 
-def save_output(data, csv_file, json_file, ctx, model_data):
+def save_output(
+    data: Dict[str, Dict[str, str]], csv_file: str, json_file: str, ctx, model_data
+) -> None:
     try:
         output_csv(data, csv_file, ctx)
     except Exception as e:
@@ -530,7 +551,7 @@ NEWLINE_CHARS = [
 newline_re = re.compile("|".join(map(re.escape, NEWLINE_CHARS)))
 
 
-def normalize_newlines(text, max_len=10000):
+def normalize_newlines(text: str, max_len: int = 10000) -> str:
     if not isinstance(text, str):
         return text
 

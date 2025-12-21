@@ -60,10 +60,10 @@ class WorkflowContext:
         self.script_returncode = 0
         self.llm_engine = None
 
-    def reinit(self, model_data):
+    def reinit(self, model_data) -> None:
         self.__init__(model_data)
 
-    def setup_llm_engine(self, model_data):
+    def setup_llm_engine(self, model_data) -> None:
         engine_kwargs = {
             "model_data": model_data,
             "cache_folder": self.cache_folder,

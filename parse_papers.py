@@ -2,9 +2,9 @@ import csv
 import os
 import json
 import subprocess
-import sys
 import re
 import shlex
+from typing import List, Dict, Any, Union, Tuple
 
 from .utils import log_traceback
 from .process_papers import process_pubmed_id, save_output
@@ -20,14 +20,14 @@ parser = PromptDataParser()
 context = WorkflowContext()
 
 
-def setup(ctx=context):
+def setup(ctx=context) -> None:
     ctx.reinit(model_data)
     os.makedirs(ctx.data_cache_folder, exist_ok=True)
     os.makedirs(ctx.cache_folder, exist_ok=True)
     ctx.setup_llm_engine(model_data)
 
 
-def read_pubmed_ids(file_path, column_name):
+def read_pubmed_ids(file_path: str, column_name: str) -> List[str]:
     """
     Reads PubMed IDs from a specified column in either a CSV, XLSX, or JSON file.
     Returns a list of PubMed IDs.
@@ -77,7 +77,9 @@ def read_pubmed_ids(file_path, column_name):
             data = json.load(jsonfile)
 
             if not isinstance(data, list):
-                raise ValueError("File list be a JSON list of strings or {column_name:id} dicts")
+                raise ValueError(
+                    "File list be a JSON list of strings or {column_name:id} dicts"
+                )
 
             for elem in data:
                 if isinstance(elem, str):
@@ -88,7 +90,12 @@ def read_pubmed_ids(file_path, column_name):
     return pubmed_ids
 
 
-def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context):
+def process_pubmed_ids(
+    pubmed_ids: List[str],
+    sections_to_extract: Union[List[str], Dict[str, Any], None],
+    data_folder: str,
+    ctx=context,
+) -> List[Dict[str, Any]]:
     processed_documents = []  # Store processed documents
 
     output_folder = model_data.get("output_folder", "output")
@@ -160,7 +167,9 @@ def process_pubmed_ids(pubmed_ids, sections_to_extract, data_folder, ctx=context
     return processed_documents
 
 
-def search_for_pubmed_ids(search_script, search_term, search_options):
+def search_for_pubmed_ids(
+    search_script: str, search_term: str, search_options: str
+) -> Tuple[List[str], str]:
     pubmed_ids = []
 
     try:
@@ -190,7 +199,7 @@ def search_for_pubmed_ids(search_script, search_term, search_options):
     return pubmed_ids[1:], pubmed_ids[0]
 
 
-def parse_papers(config_file, ctx=context):
+def parse_papers(config_file: Union[str, os.PathLike[str]], ctx=context) -> None:
     model_data.load_model_data(config_file)
 
     setup()

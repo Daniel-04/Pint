@@ -1,12 +1,13 @@
 import json
 import subprocess
+from typing import List, Dict, Any
 
 from .prompt_cache_sqlite import PromptCache  # Import the SQLite-based cache
 from .retry import retry
 
 
 class ExternalEngine:
-    def __init__(self, model_data, cache_folder="cache", max_tokens=4096):
+    def __init__(self, model_data, cache_folder: str = "cache", max_tokens: int = 4096):
         """Initialize the engine with caching using SQLite."""
 
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
@@ -18,7 +19,7 @@ class ExternalEngine:
                 "To use an External LLM script, llm_script must be specified in the config file."
             )
 
-    def prompt(self, prompt, system=""):
+    def prompt(self, prompt: str, system: str = ""):
         """Generates a response using the external script, with caching."""
         messages = [
             {"role": "system", "content": system},
@@ -28,7 +29,7 @@ class ExternalEngine:
         return response["choices"][0]["message"]["content"]
 
     @retry
-    def create_chat_completion(self, messages):
+    def create_chat_completion(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         """Handles chat completion with caching support."""
         # Extract system and user messages
         system = " ".join(m["content"] for m in messages if m["role"] == "system")

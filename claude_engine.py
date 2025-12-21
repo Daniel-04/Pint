@@ -1,4 +1,5 @@
 import os
+from typing import Optional, List, Dict, Any
 
 try:
     import anthropic
@@ -23,10 +24,10 @@ class ClaudeEngine:
     def __init__(
         self,
         model_data,
-        key=None,
-        api_url="https://api.anthropic.com",
-        cache_folder="cache",
-        max_tokens=4096,
+        key: Optional[str] = None,
+        api_url: str = "https://api.anthropic.com",
+        cache_folder: str = "cache",
+        max_tokens: int = 4096,
     ):
         if not ANTHROPIC_AVAILABLE:
             raise RuntimeError(
@@ -43,7 +44,7 @@ class ClaudeEngine:
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
-    def prompt(self, prompt, system=""):
+    def prompt(self, prompt: str, system: str = "") -> str:
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
@@ -53,7 +54,7 @@ class ClaudeEngine:
 
     # This is used for API compatibility
     @retry(exceptions=RETRY_EXCEPTIONS)
-    def create_chat_completion(self, messages):
+    def create_chat_completion(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         system_msg = "".join(m["content"] for m in messages if m["role"] == "system")
 
         chat_messages = [

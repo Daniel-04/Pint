@@ -1,4 +1,5 @@
 import os
+from typing import Optional, List, Dict, Any
 
 try:
     from openai import OpenAI
@@ -24,10 +25,10 @@ class OpenAIEngine:
     def __init__(
         self,
         model_data,
-        key=None,
-        api_url="https://api.openai.com/v1",
-        cache_folder="cache",
-        max_tokens=4096,
+        key: Optional[str] = None,
+        api_url: str = "https://api.openai.com/v1",
+        cache_folder: str = "cache",
+        max_tokens: int = 4096,
     ):
         if not OPENAI_AVAILABLE:
             raise RuntimeError("To use ChatGPT, the openai package must be installed.")
@@ -42,7 +43,7 @@ class OpenAIEngine:
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
-    def prompt(self, prompt, system=""):
+    def prompt(self, prompt: str, system: str = "") -> str:
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
@@ -52,7 +53,7 @@ class OpenAIEngine:
 
     # create_chat_completion is used internally for API compatibility
     @retry(exceptions=RETRY_EXCEPTIONS)
-    def create_chat_completion(self, messages):
+    def create_chat_completion(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         system = "".join(m["content"] for m in messages if m["role"] == "system")
         prompt = "".join(m["content"] for m in messages if m["role"] == "user")
 
