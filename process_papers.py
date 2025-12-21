@@ -201,7 +201,7 @@ def load_skiptest_from_py(py_text: str):
     try:
         exec(code, {}, local_ns)
     except Exception as e:
-        raise RuntimeError(f"Error defining skipTest function: {e}")
+        raise RuntimeError(f"Error defining skipTest function: {e}") from e
 
     # Find the first callable defined
     funcs = [v for v in local_ns.values() if callable(v)]
