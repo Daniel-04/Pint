@@ -36,7 +36,7 @@ pip install pint_lib[base]
 python -m pint_lib <Config_file>
 ```
 
-The configuration file (Excel or CSV format) controls all aspects of processing:
+The configuration file (Excel, CSV, or JSON format) controls all aspects of processing:
 - Which LLM to use
 - Data source locations
 - Prompt specifications
@@ -45,12 +45,12 @@ The configuration file (Excel or CSV format) controls all aspects of processing:
 ## Input/Output
 
 **Input:**
-- CSV or Excel file with a specified column containing either:
+- Excel, CSV, or JSON file with a specified column containing either:
   - PubMed ID (PMC number)
   - Filename (if not numerical or PMC format)
 
 **Output:**
-- CSV file containing the ID and requested extracted data
+- CSV and JSON files containing the ID and requested extracted data
 
 ## Example
 
@@ -62,7 +62,23 @@ python -m pint_lib examples/Claude/test_config_pdf.xlsx
 
 ## Configuration
 
-Configuration is handled via Excel or CSV files.  
+Configuration is handled via Excel, CSV, or JSON files.
+
+A GUI for configuration generation is included:
+
+``` bash
+python config_gui.py
+```
+
+or
+
+``` bash
+python -m Pint.config_gui
+```
+
+Multi value input can be entered space separated, quoting text makes it all a single value:
+- `abstract introduction conclusion` is treated as: `["abstract", "introduction", "conclusion"]`
+- `"this is an example prompt"` -> "this is an example prompt"
 
 ## Usage with [llm_server](https://github.com/PubLLicanProject/llm_server)
 Run `pip install Pint` in the venv created by the `build.sh` script of llm_server.
@@ -76,4 +92,3 @@ While the venv is activated, run pint.
 ## Notes
 
 - You can substitute CSV files for Excel files throughout, though Excel provides better document formatting.
-```
