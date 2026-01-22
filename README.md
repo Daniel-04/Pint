@@ -24,6 +24,13 @@ PINT allows you to process academic papers from PubMed using your choice of:
 pip install pint_lib
 ```
 
+or from source:
+``` bash
+git clone https://github.com/PubLLicanProject/Pint
+cd Pint
+pip install .
+```
+
 ## Basic Installation
 Without dependencies - you can install separately only those you need 
 
@@ -34,6 +41,11 @@ pip install pint_lib[base]
 
 ```bash
 python -m pint_lib <Config_file>
+```
+
+or
+``` bash
+pint <Config_file>
 ```
 
 The configuration file (Excel, CSV, or JSON format) controls all aspects of processing:
@@ -71,9 +83,8 @@ python config_gui.py
 ```
 
 or
-
 ``` bash
-python -m Pint.config_gui
+python -m pint_lib.config_gui
 ```
 
 Multi value input can be entered space separated, quoting text makes it all a single value:
@@ -81,7 +92,7 @@ Multi value input can be entered space separated, quoting text makes it all a si
 - `"this is an example prompt"` -> "this is an example prompt"
 
 ## Usage with [llm_server](https://github.com/PubLLicanProject/llm_server)
-Run `pip install Pint` in the venv created by the `build.sh` script of llm_server.
+Run `pip install pint_lib` in the venv created by the `build.sh` script of llm_server.
 Then, in the config set:
 - model: openai
 - model_name: [name of the ollama model to use]
