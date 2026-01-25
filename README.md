@@ -73,7 +73,7 @@ python config_gui.py
 or
 
 ``` bash
-python -m Pint.config_gui
+python -m pint_lib.config_gui
 ```
 
 Multi value input can be entered space separated, quoting text makes it all a single value:
