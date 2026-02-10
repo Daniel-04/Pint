@@ -1,66 +1,90 @@
-
 import os
-import json
+from typing import Optional, List, Dict, Any
 
-import hashlib
-from .model_data import get_model_data
+try:
+    import anthropic
 
-from .prompt_cache_sqlite import PromptCache   
+    RETRY_EXCEPTIONS = (
+        anthropic.APIConnectionError,
+        anthropic.APITimeoutError,
+        anthropic.RateLimitError,
+        anthropic.InternalServerError,
+    )
+    ANTHROPIC_AVAILABLE = True
+except ModuleNotFoundError:
+    anthropic = None
+    RETRY_EXCEPTIONS = ()
+    ANTHROPIC_AVAILABLE = False
+
+from .prompt_cache_sqlite import PromptCache
+from .retry import retry
 
 
 class ClaudeEngine:
+    def __init__(
+        self,
+        model_data,
+        key: Optional[str] = None,
+        api_url: str = "https://api.anthropic.com",
+        cache_folder: str = "cache",
+        max_tokens: int = 4096,
+    ):
+        if not ANTHROPIC_AVAILABLE:
+            raise RuntimeError(
+                "To use Claude, the anthropic package must be installed."
+            )
 
-    def __init__(self, key=None, cache_folder="cache", max_tokens = 4096):
-        
-        try:
-            import anthropic
-        except:
-            raise RuntimeError("To use Claude, the anthropic package must be installed.")
-        
-        if key == None:
-            key = os.environ["ANTHROPIC_API_KEY"]
-        if key == None:
+        if key is None:
+            key = os.environ.get("ANTHROPIC_API_KEY")
+        if key is None:
             raise RuntimeError("ANTHROPIC_API_KEY environment variable is not set.")
-        model_data = get_model_data()
+        self.model_engine = model_data.get("model_name")
         self.max_tokens = max_tokens
-        self.model_engine = model_data["model_name"]     
-        self.client = anthropic.Anthropic(api_key=key, )
+        self.client = anthropic.Anthropic(api_key=key, base_url=api_url)
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
-
-    def prompt(self, prompt, system = ""):
-        messages = [ {"role": "system", "content": system}, {"role": "user", "content": prompt}]
+    def prompt(self, prompt: str, system: str = "") -> str:
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
         response = self.create_chat_completion(messages)
         return response["choices"][0]["message"]["content"]
 
-    #This is used for API compatibility
-    def create_chat_completion(self, messages):
+    # This is used for API compatibility
+    @retry(exceptions=RETRY_EXCEPTIONS)
+    def create_chat_completion(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+        system_msg = "".join(m["content"] for m in messages if m["role"] == "system")
 
-        prompt=""
-        system = ""
-        for m in messages:
-            if m["role"] == "user":
-                prompt += m["content"]
-            if m["role"] == "system":
-                system += m["content"]
+        chat_messages = [
+            {"role": m["role"], "content": m["content"]}
+            for m in messages
+            if m["role"] != "system"
+        ]
 
-        cached_response = self.cache.get_cached_response(self.model_engine, system, prompt)
-        if cached_response:
-            return {"choices": [cached_response]}
-            
-        
-        message = self.client.messages.create(
+        system = system_msg
+        prompt = "".join(m["content"] for m in chat_messages if m["role"] == "user")
+
+        cached = self.cache.get_cached_response(self.model_engine, system, prompt)
+        if cached:
+            return {"choices": [cached]}
+
+        response = self.client.messages.create(
             model=self.model_engine,
-            system=system,
+            system=system_msg,
+            messages=chat_messages,
             max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}]
         )
 
-        response = {"message": {"content": message.content[0].text}}
+        text = response.content[0].text
+        wrapped = {
+            "message": {
+                "role": "assistant",
+                "content": text,
+            }
+        }
 
         # Save response to cache
-        self.cache.save_response(self.model_engine, system, prompt, response)
-
-        return {"choices": [response]}
-
+        self.cache.save_response(self.model_engine, system, prompt, wrapped)
+        return {"choices": [wrapped]}

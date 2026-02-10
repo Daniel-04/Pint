@@ -1,53 +1,66 @@
 import os
+from typing import Optional, List, Dict, Any
 
-import json
-import hashlib
-from .model_data import get_model_data
+try:
+    from openai import OpenAI
+    import openai
 
-from .prompt_cache_sqlite import PromptCache   
+    RETRY_EXCEPTIONS = (
+        openai.APIConnectionError,
+        openai.APITimeoutError,
+        openai.RateLimitError,
+        openai.InternalServerError,
+    )
+    OPENAI_AVAILABLE = True
+except ModuleNotFoundError:
+    openai = None
+    RETRY_EXCEPTIONS = ()
+    OPENAI_AVAILABLE = False
 
-
+from .prompt_cache_sqlite import PromptCache
+from .retry import retry
 
 
 class OpenAIEngine:
-    def __init__(self, key=None, cache_folder="cache", max_tokens = 4096):
-        try:
-            from openai import OpenAI
-        except:
+    def __init__(
+        self,
+        model_data,
+        key: Optional[str] = None,
+        api_url: str = "https://api.openai.com/v1",
+        cache_folder: str = "cache",
+        max_tokens: int = 4096,
+    ):
+        if not OPENAI_AVAILABLE:
             raise RuntimeError("To use ChatGPT, the openai package must be installed.")
-            
-        
+
         if key is None:
             key = os.environ.get("OPENAI_API_KEY")
         if key is None:
             raise RuntimeError("OPENAI_API_KEY environment variable is not set.")
-        model_data = get_model_data()
-        self.model_engine = model_data["model_name"]
-        self.max_tokens = max_tokens        
-        self.client  = OpenAI(api_key=key)
+        self.model_engine = model_data.get("model_name")
+        self.max_tokens = max_tokens
+        self.client = OpenAI(api_key=key, base_url=api_url)
         self.cache_folder = cache_folder
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
 
-    def prompt(self, prompt, system=""):
-
+    def prompt(self, prompt: str, system: str = "") -> str:
         messages = [
             {"role": "system", "content": system},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": prompt},
         ]
         response = self.create_chat_completion(messages)
         return response["choices"][0]["message"]["content"]
 
     # create_chat_completion is used internally for API compatibility
-    def create_chat_completion(self, messages):
+    @retry(exceptions=RETRY_EXCEPTIONS)
+    def create_chat_completion(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+        system = "".join(m["content"] for m in messages if m["role"] == "system")
+        prompt = "".join(m["content"] for m in messages if m["role"] == "user")
 
- 
+        cached = self.cache.get_cached_response(self.model_engine, system, prompt)
+        if cached:
+            return {"choices": [cached]}
 
-        cached_response = self.cache.get_cached_response(self.model_engine, system, prompt)
-        if cached_response:
-            return {"choices": [cached_response]}
-            
-            
- 
         response = self.client.chat.completions.create(
             model=self.model_engine,
             messages=messages,
@@ -56,9 +69,14 @@ class OpenAIEngine:
             n=1,
         )
 
-        content = response.choices[0].message.content
+        msg = response.choices[0].message
+        wrapped = {
+            "message": {
+                "role": "assistant",
+                "content": msg.content,
+            }
+        }
 
-        cached_message = {"message": {"content": content}}
-        self.cache.save_response(self.model_engine, system, prompt, cached_message)
-
-        return {"choices": [cached_message]}
+        # Save response to cache
+        self.cache.save_response(self.model_engine, system, prompt, wrapped)
+        return {"choices": [wrapped]}
