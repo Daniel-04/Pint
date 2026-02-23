@@ -13,6 +13,8 @@ class ExternalEngine:
         self.cache = PromptCache(cache_folder)  # Use the imported cache class
         self.max_tokens = max_tokens  # note not used for external engine
         self.model_engine = model_data.get("model_name")
+        if isinstance(self.model_engine, list):
+            self.model_engine = "ollama" + ",".join(self.model_engine)
         self.llm_script = model_data.resolve_path(model_data.get("llm_script"))
         if self.llm_script is None:
             raise RuntimeError(
